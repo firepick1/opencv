@@ -562,7 +562,11 @@ void TS::vprintf( int streams, const char* fmt, va_list l )
     for( int i = 0; i < MAX_IDX; i++ )
         if( (streams & (1 << i)) )
         {
+#if defined __sun
+            output_buf[i] += string(str);
+#else
             output_buf[i] += std::string(str);
+#endif
             // in the new GTest-based framework we do not use
             // any output files (except for the automatically generated xml report).
             // if a test fails, all the buffers are printed, so we do not want to duplicate the information and
@@ -617,7 +621,11 @@ void smoothBorder(Mat& img, const Scalar& color, int delta)
     Scalar s;
     uchar *p = NULL;
     int n = 100/delta;
+#if defined __sun
+    int nR = ::std::min(n, (img.rows+1)/2), nC = ::std::min(n, (img.cols+1)/2);
+#else
     int nR = std::min(n, (img.rows+1)/2), nC = std::min(n, (img.cols+1)/2);
+#endif
 
     int r, c, i;
     for(r=0; r<nR; r++)

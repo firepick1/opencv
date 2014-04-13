@@ -146,7 +146,9 @@ enum flann_distance_t
     MAX_DIST   = 4,
     HIST_INTERSECT   = 5,
     HELLINGER = 6,
+#if !defined __sun
     CS         = 7,
+#endif
     KL         = 8,
     KULLBACK_LEIBLER  = 8
 };

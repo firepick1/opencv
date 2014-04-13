@@ -73,9 +73,9 @@ struct DefCornerCompare
 static void sortCorners_caller(oclMat& corners, const int count)
 {
     Context * cxt = Context::getContext();
-    int     GS = count/2;
-    int     LS = min(255,GS);
-    size_t  globalThreads[3] = {GS, 1, 1};
+    int     GS_ = count/2;
+    int     LS = min(255,GS_);
+    size_t  globalThreads[3] = {GS_, 1, 1};
     size_t  localThreads[3]  = {LS, 1, 1};
 
     // 2^numStages should be equal to count or the output is invalid

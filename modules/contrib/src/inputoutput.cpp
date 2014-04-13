@@ -79,7 +79,11 @@ namespace cv
 
             while ((dirp = readdir(dp)) != NULL)
             {
+#if defined __sun
+	  throw "This operating system does not support dirent d_type. Please reimplement using stat";
+#else
                 if (dirp->d_type == DT_REG)
+#endif
                 {
                     if (exten.compare("*") == 0)
                         list.push_back(static_cast<std::string>(dirp->d_name));
@@ -158,6 +162,8 @@ namespace cv
                 FindClose(hFind);
             }
 
+	#elif defined __sun
+	  throw "This operating system does not support dirent d_type. Please reimplement using stat";
         #else
             (void)addPath;
             DIR *dp;
