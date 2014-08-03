@@ -1,14 +1,27 @@
 #! /bin/bash
-mkdir -p release.pi
-cd release.pi
-if [ ! -e toolchain.cmake ]; then
-  echo "set( CMAKE_SYSTEM_NAME Linux )" >> toolchain.cmake
-  echo "set( CMAKE_SYSTEM_PROCESSOR arm )" >> toolchain.cmake
-  echo "set( CMAKE_C_COMPILER arm-angstrom-linux-gnueabi-gcc )" >> toolchain.cmake
-  echo "set( CMAKE_CXX_COMPILER arm-angstrom-linux-gnueabi-g++ )" >> toolchain.cmake
-  echo "set( CMAKE_FIND_ROOT_PATH ~/targetfs )" >> toolchain.cmake
+
+echo "COMMAND	: build.pi - cross-compile OpenCV for RaspberryPi"
+
+if [ ! -e release.pi ]; then mkdir -p release.pi; fi
+
+pushd release.pi
+if [ -e CMakeFiles ] ; then 
+  echo "STATUS	: removing existing makefiles"
+  rm -rf CMakeCache.txt CMakeFiles CMakeFiles.txt cmake_install.cmake CPackConfig.cmake CPackSourceConfig.cmake
 fi
 
+echo "STATUS	: creating cross-compile toolchain.cmake"
+rm toolchain.cmake
+echo "set( CMAKE_SYSTEM_NAME Linux )" >> toolchain.cmake
+echo "set( CMAKE_SYSTEM_PROCESSOR arm )" >> toolchain.cmake
+LINARO_PATH=~/github/tools/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin
+echo "set( CMAKE_C_COMPILER $LINARO_PATH/arm-linux-gnueabihf-gcc )" >> toolchain.cmake
+echo "set( CMAKE_CXX_COMPILER $LINARO_PATH/arm-linux-gnueabihf-g++ )" >> toolchain.cmake
+#echo "set( CMAKE_C_COMPILER arm-angstrom-linux-gnueabi-gcc )" >> toolchain.cmake
+#echo "set( CMAKE_CXX_COMPILER arm-angstrom-linux-gnueabi-g++ )" >> toolchain.cmake
+echo "set( CMAKE_FIND_ROOT_PATH \"~/targetfs ~/targetfs/usr/include/arm-linux-gnueabihf\" )" >> toolchain.cmake
+
+echo "COMMAND	: cmake -DCMAKE_TOOLCHAIN_FILE=toolchain.cmake ..."
 cmake \
   -DCMAKE_TOOLCHAIN_FILE=toolchain.cmake \
   -D BUILD_EXAMPLES=OFF \
@@ -24,10 +37,10 @@ cmake \
   -D WITH_GSTREAMER=OFF \
   -D WITH_GTK=OFF \
   -D WITH_JASPER=OFF \
-  -D WITH_JPEG=OFF \
+  -D WITH_JPEG=ON \
   -D WITH_OPENEXR=OFF \
   -D WITH_OPENGL=ON \
-  -D WITH_PNG=OFF \
+  -D WITH_PNG=ON \
   -D WITH_PVAPI=OFF \
   -D WITH_QT=OFF \
   -D WITH_QT_OPENGL=OFF \
@@ -36,10 +49,18 @@ cmake \
   -D WITH_UNICAP=OFF \
   -D WITH_V4L=OFF \
   -D WITH_XINE=OFF \
+  -D BUILD_opencv_nonfree=0 \
   ..
+#  -D ONLY_CMAKE_FIND_ROOT_PATH=ON \
+if [ $? -ne 0 ]; then echo "ERROR	: cmake failed"; exit -1; fi
 
+echo "COMMAND	: make -j4"
 make -j4
+if [ $? -ne 0 ]; then echo "ERROR	: make failed"; exit -1; fi
 
+popd
+
+echo "STATUS	: creating release.pi/install/opencv.zip"
 rm -rf release.pi/install
 mkdir release.pi/install
 
@@ -56,7 +77,7 @@ popd
 
 pushd release.pi/CMakeFiles/Export;zip -r ../../../release.pi/install/opencv share;popd
 pushd release.pi/install;zip -r ../../release.pi/install/opencv share include;popd
-pushd release.pi;zip -r ../release.pi/install/opencv lib/*so* lib/libopencv_ts.a;popd
+pushd release.pi;zip --symlinks -r ../release.pi/install/opencv lib/*so* lib/libopencv_ts.a -x *nonfree* ; popd
 pushd modules/calib3d;zip -r ../../release.pi/install/opencv include;popd
 pushd modules/contrib;zip -r ../../release.pi/install/opencv include;popd
 pushd modules/core;zip -r ../../release.pi/install/opencv include;popd
@@ -67,7 +88,6 @@ pushd modules/highgui;zip -r ../../release.pi/install/opencv include;popd
 pushd modules/imgproc;zip -r ../../release.pi/install/opencv include;popd
 pushd modules/legacy;zip -r ../../release.pi/install/opencv include;popd
 pushd modules/ml;zip -r ../../release.pi/install/opencv include;popd
-pushd modules/nonfree;zip -r ../../release.pi/install/opencv include;popd
 pushd modules/objdetect;zip -r ../../release.pi/install/opencv include;popd
 pushd modules/ocl;zip -r ../../release.pi/install/opencv include -x */cl_runtime/* */private/*;popd
 pushd modules/photo;zip -r ../../release.pi/install/opencv include;popd
@@ -76,3 +96,9 @@ pushd modules/superres;zip -r ../../release.pi/install/opencv include;popd
 pushd modules/ts;zip -r ../../release.pi/install/opencv include;popd
 pushd modules/video;zip -r ../../release.pi/install/opencv include;popd
 pushd modules/videostab;zip -r ../../release.pi/install/opencv include;popd
+
+echo "-------------------------------------"
+echo "SUCCESS	: install/opencv.zip created"
+echo "INSTALL	: 1) transfer opencv.zip to Raspberry Pi ~/pi"
+echo "INSTALL	: 2) cd /usr/local"
+echo "INSTALL	: 3) sudo unzip ~/opencv.zip"
