@@ -1,20 +1,31 @@
-#! /bin/bash
-
 echo "COMMAND	: build.pi - cross-compile OpenCV for RaspberryPi"
 
 if [ ! -e release.pi ]; then mkdir -p release.pi; fi
 
-pushd release.pi
+pushd release.pi > /dev/null
 if [ -e CMakeFiles ] ; then 
   echo "STATUS	: removing existing makefiles"
   rm -rf CMakeCache.txt CMakeFiles CMakeFiles.txt cmake_install.cmake CPackConfig.cmake CPackSourceConfig.cmake
 fi
 
+if [ "$RPI_BLD" == "" ]; then
+  echo "RPI_BLD	: Using default toolchain location: ~/rpibld"
+  RPI_BLD=~/rpibld
+fi
+echo "RPI_BLD	: $RPI_BLD"
+if [ ! -e $RPI_BLD ]; then
+  echo "STATUS	: instlalling Raspberry Pi cross-compilation tools"
+  echo "COMMAND	: git clone git://github.com/raspberrypi/tools.git --depth 1 $RPI_BLD"
+  pushd ~ > /dev/null
+    git clone git://github.com/raspberrypi/tools.git --depth 1 $RPI_BLD
+  popd > /dev/null
+fi
+
 echo "STATUS	: creating cross-compile toolchain.cmake"
-rm toolchain.cmake
+rm -f toolchain.cmake
 echo "set( CMAKE_SYSTEM_NAME Linux )" >> toolchain.cmake
 echo "set( CMAKE_SYSTEM_PROCESSOR arm )" >> toolchain.cmake
-LINARO_PATH=~/github/tools/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin
+LINARO_PATH=$RPI_BLD/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin
 echo "set( CMAKE_C_COMPILER $LINARO_PATH/arm-linux-gnueabihf-gcc )" >> toolchain.cmake
 echo "set( CMAKE_CXX_COMPILER $LINARO_PATH/arm-linux-gnueabihf-g++ )" >> toolchain.cmake
 #echo "set( CMAKE_C_COMPILER arm-angstrom-linux-gnueabi-gcc )" >> toolchain.cmake
@@ -58,7 +69,7 @@ echo "COMMAND	: make -j4"
 make -j4
 if [ $? -ne 0 ]; then echo "ERROR	: make failed"; exit -1; fi
 
-popd
+popd > /dev/null
 
 echo "STATUS	: creating release.pi/install/opencv.zip"
 rm -rf release.pi/install
@@ -69,33 +80,40 @@ zip -r release.pi/install/opencv include/opencv include/opencv2
 mkdir release.pi/install/include
 cp -r release.pi/opencv2 release.pi/install/include/
 
-pushd release.pi
+pushd release.pi > /dev/null
 mkdir -p install/share/OpenCV
 cp OpenCVConfig.cmake install/share/OpenCV/OpenCVConfig.cmake
 cp OpenCVConfig-version.cmake install/share/OpenCV/OpenCVConfig-version.cmake
-popd
+popd > /dev/null
 
-pushd release.pi/CMakeFiles/Export;zip -r ../../../release.pi/install/opencv share;popd
-pushd release.pi/install;zip -r ../../release.pi/install/opencv share include;popd
-pushd release.pi;zip --symlinks -r ../release.pi/install/opencv lib/*so* lib/libopencv_ts.a -x *nonfree* ; popd
-pushd modules/calib3d;zip -r ../../release.pi/install/opencv include;popd
-pushd modules/contrib;zip -r ../../release.pi/install/opencv include;popd
-pushd modules/core;zip -r ../../release.pi/install/opencv include;popd
-pushd modules/features2d;zip -r ../../release.pi/install/opencv include;popd
-pushd modules/flann;zip -r ../../release.pi/install/opencv include;popd
-pushd modules/gpu;zip -r ../../release.pi/install/opencv include;popd
-pushd modules/highgui;zip -r ../../release.pi/install/opencv include;popd
-pushd modules/imgproc;zip -r ../../release.pi/install/opencv include;popd
-pushd modules/legacy;zip -r ../../release.pi/install/opencv include;popd
-pushd modules/ml;zip -r ../../release.pi/install/opencv include;popd
-pushd modules/objdetect;zip -r ../../release.pi/install/opencv include;popd
-pushd modules/ocl;zip -r ../../release.pi/install/opencv include -x */cl_runtime/* */private/*;popd
-pushd modules/photo;zip -r ../../release.pi/install/opencv include;popd
-pushd modules/stitching;zip -r ../../release.pi/install/opencv include;popd
-pushd modules/superres;zip -r ../../release.pi/install/opencv include;popd
-pushd modules/ts;zip -r ../../release.pi/install/opencv include;popd
-pushd modules/video;zip -r ../../release.pi/install/opencv include;popd
-pushd modules/videostab;zip -r ../../release.pi/install/opencv include;popd
+function package() {
+  pushd $1 > /dev/null
+  shift
+  zip -r $*
+  popd > /dev/null
+}
+
+package release.pi/CMakeFiles/Export ../../../release.pi/install/opencv share
+package release.pi/install ../../release.pi/install/opencv share include
+package release.pi --symlinks ../release.pi/install/opencv lib/*so* lib/libopencv_ts.a -x *nonfree* 
+package modules/calib3d ../../release.pi/install/opencv include
+package modules/contrib ../../release.pi/install/opencv include
+package modules/core ../../release.pi/install/opencv include
+package modules/features2d ../../release.pi/install/opencv include
+package modules/flann ../../release.pi/install/opencv include
+package modules/gpu ../../release.pi/install/opencv include
+package modules/highgui ../../release.pi/install/opencv include
+package modules/imgproc ../../release.pi/install/opencv include
+package modules/legacy ../../release.pi/install/opencv include
+package modules/ml ../../release.pi/install/opencv include
+package modules/objdetect ../../release.pi/install/opencv include
+package modules/ocl ../../release.pi/install/opencv include -x */cl_runtime/* */private/*
+package modules/photo ../../release.pi/install/opencv include
+package modules/stitching ../../release.pi/install/opencv include
+package modules/superres ../../release.pi/install/opencv include
+package modules/ts ../../release.pi/install/opencv include
+package modules/video ../../release.pi/install/opencv include
+package modules/videostab ../../release.pi/install/opencv include
 
 echo "-------------------------------------"
 echo "SUCCESS	: install/opencv.zip created"

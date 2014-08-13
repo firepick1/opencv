@@ -1,4 +1,21 @@
-### OpenCV: Open Source Computer Vision Library
+### OpenCV: Open Source Computer Vision Library (Raspberry PI)
+
+### Cross Compile for Raspberry Pi (~45m)
+Build OpenCV for Raspberry Pi:
+
+1. Use an i86 64-bit Ubuntu 12.04 machine for cross compiling
+1. Open a command prompt at your build root
+1. `git clone https://github.com/firepick1/opencv`
+1. `cd opencv`
+1. `git checkout dev`
+1. `./build.pi`
+
+Install OpenCV on Raspberry Pi, named "firepick":
+
+1. `rcp release.pi/install/opencv.zip pi@firepick:opencv.zip`
+1. `ssh pi@firepick`
+1. `cd /usr/local`
+1. `sudo unzip release.pi/install/opencv.zip /usr/local`
 
 #### Resources
 
