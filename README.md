@@ -14,8 +14,7 @@ Install OpenCV on Raspberry Pi, named "firepick":
 
 1. `rcp release.pi/install/opencv.zip pi@firepick:opencv.zip`
 1. `ssh pi@firepick`
-1. `cd /usr/local`
-1. `sudo unzip release.pi/install/opencv.zip /usr/local`
+1. `sudo unzip opencv.zip /usr/local`
 
 #### Resources
 
